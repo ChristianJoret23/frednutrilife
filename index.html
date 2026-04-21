@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FredNutriLife — Nutrition · Vitalité · Longévité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Libre+Caslon+Display&family=DM+Serif+Display:ital@0;1&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="blog.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script type="application/json" id="speaker-notes">[]</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="components/BlogStore.js"></script>
+<script type="text/babel" src="components/Nav.jsx"></script>
+<script type="text/babel" src="components/Hero.jsx"></script>
+<script type="text/babel" src="components/Marquee.jsx"></script>
+<script type="text/babel" src="components/About.jsx"></script>
+<script type="text/babel" src="components/Pillars.jsx"></script>
+<script type="text/babel" src="components/Services.jsx"></script>
+<script type="text/babel" src="components/Process.jsx"></script>
+<script type="text/babel" src="components/Testimonials.jsx"></script>
+<script type="text/babel" src="components/Blog.jsx"></script>
+<script type="text/babel" src="components/FAQ.jsx"></script>
+<script type="text/babel" src="components/Booking.jsx"></script>
+<script type="text/babel" src="components/CTA.jsx"></script>
+<script type="text/babel" src="components/Footer.jsx"></script>
+<script type="text/babel" src="components/Tweaks.jsx"></script>
+
+<script type="text/babel">
+
+
+const { useState, useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": 0,
+  "typeStyle": "editorial",
+  "heroVariant": "energie"
+} /*EDITMODE-END*/;
+
+const PALETTES = [
+{ ink: "#0f1a14", ink2: "#18241d", ink3: "#22312a", cream: "#f2ebdc", cream2: "#ebe2cf", tan: "#c9b896", tan2: "#b09e7c", accent: "oklch(0.65 0.12 40)" },
+{ ink: "#11131a", ink2: "#181a24", ink3: "#222533", cream: "#ecebe5", cream2: "#e3e0d6", tan: "#b5aa85", tan2: "#9a8e6e", accent: "oklch(0.7 0.1 250)" },
+{ ink: "#1f1611", ink2: "#2a1f18", ink3: "#352920", cream: "#efe4d2", cream2: "#e5d8c0", tan: "#c8a676", tan2: "#ad8a5c", accent: "oklch(0.6 0.13 30)" },
+{ ink: "#16181a", ink2: "#1f2225", ink3: "#292c30", cream: "#e8e6df", cream2: "#dcd9cf", tan: "#a89a7e", tan2: "#8f8166", accent: "oklch(0.68 0.09 180)" }];
+
+
+const TYPE_STYLES = {
+  editorial: { display: '"Cormorant Garamond", serif', body: '"Manrope", sans-serif' },
+  modern: { display: '"Space Grotesk", sans-serif', body: '"Manrope", sans-serif' },
+  classic: { display: '"DM Serif Display", serif', body: '"Manrope", sans-serif' }
+};
+
+const HERO_VARIANTS = {
+  energie: { kw1: "énergie", kw2: "vie" },
+  vitalite: { kw1: "vitalité", kw2: "clarté" },
+  longevite: { kw1: "longévité", kw2: "liberté" }
+};
+
+function applyTweaks(values) {
+  const p = PALETTES[values.palette] || PALETTES[0];
+  const r = document.documentElement.style;
+  r.setProperty("--ink", p.ink);
+  r.setProperty("--ink-2", p.ink2);
+  r.setProperty("--ink-3", p.ink3);
+  r.setProperty("--cream", p.cream);
+  r.setProperty("--cream-2", p.cream2);
+  r.setProperty("--tan", p.tan);
+  r.setProperty("--tan-2", p.tan2);
+  r.setProperty("--terracotta", p.accent);
+
+  const t = TYPE_STYLES[values.typeStyle] || TYPE_STYLES.editorial;
+  r.setProperty("--font-display", t.display);
+  r.setProperty("--font-body", t.body);
+}
+
+function App() {
+  const [bookOpen, setBookOpen] = useState(false);
+  const [tweakMode, setTweakMode] = useState(false);
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+
+  const openBooking = () => setBookOpen(true);
+
+  useEffect(() => {
+    applyTweaks(tweaks);
+  }, [tweaks]);
+
+  useEffect(() => {
+    const handler = (ev) => {
+      if (ev.data?.type === "__activate_edit_mode") setTweakMode(true);
+      if (ev.data?.type === "__deactivate_edit_mode") setTweakMode(false);
+    };
+    window.addEventListener("message", handler);
+    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  useEffect(() => {
+    // reveal animations
+    const els = document.querySelectorAll(".reveal, section > .container > .section-head, .pillar, .svc-card, .t-card, .step");
+    els.forEach((el) => el.classList.add("reveal"));
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("visible");
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  const onTweakChange = (partial) => {
+    const next = { ...tweaks, ...partial };
+    setTweaks(next);
+    window.parent.postMessage({ type: "__edit_mode_set_keys", edits: partial }, "*");
+  };
+
+  const heroKw = HERO_VARIANTS[tweaks.heroVariant] || HERO_VARIANTS.energie;
+
+  return (
+    <>
+      <Nav onBook={openBooking} />
+      <HeroWithKeywords onBook={openBooking} keywords={heroKw} />
+      <Marquee />
+      <About />
+      <Pillars />
+      <Services onBook={openBooking} />
+      <Process />
+      <Testimonials />
+      <Blog />
+      <FAQ />
+      <CTA onBook={openBooking} />
+      <Footer />
+      <Booking open={bookOpen} onClose={() => setBookOpen(false)} />
+      <Tweaks visible={tweakMode} onChange={onTweakChange} values={tweaks} />
+    </>);
+
+}
+
+// Wrap hero to pass keyword variant
+function HeroWithKeywords({ onBook, keywords }) {
+  return (
+    <section className="hero" id="accueil" data-screen-label="Landing / Hero">
+      <div className="hero-bg-type" aria-hidden="true">vitalité</div>
+      <div className="container">
+        <div className="hero-grid">
+          <div>
+            <span className="eyebrow">Nutrition · Vitalité · Longévité</span>
+            <h1 className="display">
+              Retrouvez votre <em style={{ color: "var(--tan)", fontStyle: "italic" }}>{keywords.kw1}</em>, sans régime, ni <em style={{ color: "var(--tan)", fontStyle: "italic" }}>frustration</em>.
+            </h1>
+            <p className="hero-lead">Vous manquez d’énergie, vous dormez mal, vous vous sentez à plat ?
+On remet de l’ordre dans votre alimentation, votre sommeil et votre rythme — sans régime, sans frustration.
+
+
+            </p>
+            <div className="hero-ctas">
+              <button className="btn btn-primary" onClick={onBook}>
+                Réserver un appel découverte <span className="arrow">→</span>
+              </button>
+              <a href="#approche" className="btn btn-outline">Découvrir la méthode</a>
+            </div>
+            <div className="hero-meta">
+              <div>
+                <div className="num display italic">  Méthode<span style={{ color: "var(--tan)" }}></span></div>
+                <div className="lbl">ORIENTÉE RÉSULTATS</div>
+              </div>
+              <div>
+                <div className="num display italic">      130</div>
+                <div className="lbl">Personnes accompagnées</div>
+              </div>
+              <div>
+                <div className="num display italic">IFSNM</div>
+                <div className="lbl">Certification</div>
+              </div>
+            </div>
+          </div>
+          <div className="hero-visual">
+            <div className="hero-photo" style={{ backgroundImage: "url('assets/fred-hero.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+            </div>
+            <div className="hero-badge">
+              <div className="label">Coach certifié</div>
+              <div className="cert">Institut Français de Science Nutrition & Micronutrition</div>
+            </div>
+            <div className="hero-seal">
+              <svg viewBox="0 0 128 128">
+                <defs>
+                  <path id="circle-path" d="M 64, 64 m -48, 0 a 48,48 0 1,1 96,0 a 48,48 0 1,1 -96,0" />
+                </defs>
+                <text fontFamily="Manrope" fontSize="9" letterSpacing="2" fill="#0f1a14">
+                  <textPath href="#circle-path">ÉQUILIBRE ALIMENTAIRE · MOUVEMENT · SOMMEIL · </textPath>
+                </text>
+                <text x="64" y="70" textAnchor="middle" fontFamily="Cormorant Garamond" fontStyle="italic" fontSize="22" fill="#0f1a14">Fred</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>);
+
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

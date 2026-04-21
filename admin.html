@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FredNutriLife — Rédaction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="blog.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="components/BlogStore.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+const CATEGORIES = ["Alimentation", "Mouvement", "Sommeil", "Micronutrition", "Longévité", "Mindset"];
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function estimateReadTime(text) {
+  const words = (text || "").trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+function slugify(s) {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function AdminApp() {
+  const [articles, setArticles] = useState(() => BlogStore.load());
+  const [selectedId, setSelectedId] = useState(() => {
+    const all = BlogStore.load();
+    return all[0]?.id || null;
+  });
+  const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [saveStatus, setSaveStatus] = useState("saved");
+  const saveTimer = useRef(null);
+
+  const selected = articles.find(a => a.id === selectedId) || null;
+
+  const filtered = useMemo(() => {
+    let list = articles;
+    if (filter !== "all") list = list.filter(a => a.status === filter);
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter(a => (a.title || "").toLowerCase().includes(q) || (a.excerpt || "").toLowerCase().includes(q));
+    }
+    return list.sort((a, b) => {
+      if (a.status === "draft" && b.status !== "draft") return -1;
+      if (b.status === "draft" && a.status !== "draft") return 1;
+      return (b.publishedAt || b.id).localeCompare(a.publishedAt || a.id);
+    });
+  }, [articles, filter, query]);
+
+  const update = (patch) => {
+    if (!selected) return;
+    const updated = { ...selected, ...patch };
+    setArticles(prev => prev.map(a => a.id === updated.id ? updated : a));
+    setSaveStatus("saving");
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      BlogStore.upsert(updated);
+      setSaveStatus("saved");
+    }, 400);
+  };
+
+  const createArticle = () => {
+    const draft = {
+      id: BlogStore.newId(),
+      title: "Nouvel article",
+      slug: "",
+      category: CATEGORIES[0],
+      excerpt: "",
+      cover: "",
+      body: "",
+      author: "Frédéric Martin",
+      readTime: 1,
+      publishedAt: "",
+      status: "draft",
+      tags: [],
+    };
+    BlogStore.upsert(draft);
+    setArticles(BlogStore.load());
+    setSelectedId(draft.id);
+  };
+
+  const publish = () => {
+    if (!selected) return;
+    update({
+      status: "published",
+      publishedAt: selected.publishedAt || todayISO(),
+      slug: selected.slug || slugify(selected.title),
+      readTime: selected.readTime || estimateReadTime(selected.body),
+    });
+  };
+
+  const unpublish = () => update({ status: "draft" });
+
+  const del = () => {
+    if (!selected) return;
+    if (!confirm(`Supprimer "${selected.title}" ?`)) return;
+    BlogStore.remove(selected.id);
+    const all = BlogStore.load();
+    setArticles(all);
+    setSelectedId(all[0]?.id || null);
+  };
+
+  const addTag = (tag) => {
+    if (!tag || !selected) return;
+    const tags = [...(selected.tags || [])];
+    if (!tags.includes(tag)) tags.push(tag);
+    update({ tags });
+  };
+  const removeTag = (tag) => {
+    update({ tags: (selected.tags || []).filter(t => t !== tag) });
+  };
+
+  const [tagInput, setTagInput] = useState("");
+
+  const insert = (before, after = "") => {
+    const ta = document.querySelector(".admin-body");
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const val = ta.value;
+    const selText = val.slice(start, end) || "";
+    const next = val.slice(0, start) + before + selText + after + val.slice(end);
+    update({ body: next });
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = start + before.length;
+      ta.selectionEnd = start + before.length + selText.length;
+    }, 0);
+  };
+
+  const onCoverUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => update({ cover: reader.result });
+    reader.readAsDataURL(file);
+  };
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Brouillon";
+
+  return (
+    <div className="admin-page">
+      <header className="admin-header">
+        <a href="FredNutriLife — Landing Page.html" className="brand">
+          <img src="assets/logo.jpg" alt="FredNutriLife" style={{ height: 40, width: "auto", borderRadius: 4 }} />
+          <span className="pill">Rédaction</span>
+        </a>
+        <div className="admin-actions">
+          <a href="FredNutriLife — Landing Page.html" className="btn btn-outline" style={{ padding: "10px 18px", fontSize: 12 }}>
+            Voir le site →
+          </a>
+          <button className="btn btn-primary" onClick={createArticle} style={{ padding: "10px 18px", fontSize: 12 }}>
+            + Nouvel article
+          </button>
+        </div>
+      </header>
+
+      <div className="admin-layout">
+        <aside className="admin-sidebar">
+          <div className="admin-sidebar-head">
+            <input
+              className="admin-search"
+              placeholder="Rechercher un article…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+            <div className="admin-tabs">
+              {[
+                { k: "all", n: `Tous (${articles.length})` },
+                { k: "published", n: `Publiés (${articles.filter(a=>a.status==='published').length})` },
+                { k: "draft", n: `Brouillons (${articles.filter(a=>a.status==='draft').length})` },
+              ].map(t => (
+                <button
+                  key={t.k}
+                  className={"admin-tab" + (filter === t.k ? " active" : "")}
+                  onClick={() => setFilter(t.k)}
+                >{t.n}</button>
+              ))}
+            </div>
+          </div>
+          <div className="admin-list">
+            {filtered.length === 0 && (
+              <div style={{ padding: 32, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+                Aucun article.
+              </div>
+            )}
+            {filtered.map(a => (
+              <div
+                key={a.id}
+                className={"admin-item" + (selectedId === a.id ? " active" : "")}
+                onClick={() => setSelectedId(a.id)}
+              >
+                <div className="admin-item-head">
+                  <div className="admin-item-title">{a.title || "Sans titre"}</div>
+                  <span className={"admin-status " + a.status}>{a.status === "published" ? "publié" : "brouillon"}</span>
+                </div>
+                <div className="admin-item-meta">
+                  <span>{a.category}</span>
+                  <span>·</span>
+                  <span>{formatDate(a.publishedAt)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <main>
+          {!selected ? (
+            <div className="admin-empty">
+              <h2>Prêt à écrire.</h2>
+              <p>Créez votre premier article — brouillon automatiquement sauvegardé à chaque touche de clavier.</p>
+              <button className="btn btn-primary" onClick={createArticle}>Créer un article</button>
+            </div>
+          ) : (
+            <div className="admin-editor">
+              <div className="admin-editor-head">
+                <div>
+                  <h2>{selected.status === "published" ? "Édition" : "Rédaction"}</h2>
+                  <div className={"admin-save-status " + saveStatus}>
+                    {saveStatus === "saved" ? "✓ Enregistré automatiquement" : "Enregistrement…"}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="admin-danger" onClick={del}>Supprimer</button>
+                  {selected.status === "published" ? (
+                    <button className="admin-preview-btn" onClick={unpublish}>Dépublier</button>
+                  ) : null}
+                  <button className="btn btn-primary" onClick={publish} style={{ padding: "10px 20px", fontSize: 12 }}>
+                    {selected.status === "published" ? "Mettre à jour" : "Publier"} →
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label>Titre</label>
+                <input
+                  className="admin-title-input"
+                  value={selected.title}
+                  onChange={e => update({ title: e.target.value, slug: selected.slug || slugify(e.target.value) })}
+                  placeholder="Un titre clair et percutant…"
+                />
+              </div>
+
+              <div className="admin-row">
+                <div className="admin-field">
+                  <label>Catégorie</label>
+                  <select value={selected.category} onChange={e => update({ category: e.target.value })}>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="admin-field">
+                  <label>Date de publication</label>
+                  <input
+                    type="date"
+                    value={selected.publishedAt || ""}
+                    onChange={e => update({ publishedAt: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label>Slug (URL)</label>
+                <input
+                  value={selected.slug}
+                  onChange={e => update({ slug: slugify(e.target.value) })}
+                  placeholder="exemple-de-slug"
+                />
+              </div>
+
+              <div className="admin-field">
+                <label>Accroche (extrait)</label>
+                <textarea
+                  value={selected.excerpt}
+                  onChange={e => update({ excerpt: e.target.value })}
+                  placeholder="Deux phrases qui donnent envie de lire…"
+                  style={{ minHeight: 80 }}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label>Image de couverture</label>
+                <input
+                  value={selected.cover}
+                  onChange={e => update({ cover: e.target.value })}
+                  placeholder="assets/mon-image.jpg ou URL https://…"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onCoverUpload}
+                  style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}
+                />
+                <div
+                  className={"admin-cover-preview" + (selected.cover ? " has-image" : "")}
+                  style={selected.cover ? { backgroundImage: `url('${selected.cover}')` } : {}}
+                >
+                  {!selected.cover && "Aucune image"}
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label>Contenu</label>
+                <div className="admin-toolbar">
+                  <button onClick={() => insert("**", "**")} title="Gras"><strong>B</strong></button>
+                  <button onClick={() => insert("_", "_")} title="Italique"><em>I</em></button>
+                  <div className="sep" />
+                  <button onClick={() => insert("\n## ", "")} title="Titre">H2</button>
+                  <button onClick={() => insert("\n### ", "")} title="Sous-titre">H3</button>
+                  <div className="sep" />
+                  <button onClick={() => insert("\n- ", "")} title="Liste">• Liste</button>
+                  <button onClick={() => insert("\n> ", "")} title="Citation">" Citation</button>
+                  <div className="sep" />
+                  <button onClick={() => insert("[", "](url)")} title="Lien">Lien</button>
+                </div>
+                <textarea
+                  className="admin-body with-toolbar"
+                  value={selected.body}
+                  onChange={e => update({ body: e.target.value, readTime: estimateReadTime(e.target.value) })}
+                  placeholder="Commencez à écrire votre article…&#10;&#10;Deux sauts de ligne entre chaque paragraphe."
+                />
+                <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
+                  {estimateReadTime(selected.body)} MIN DE LECTURE · {(selected.body || "").length} CARACTÈRES
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label>Tags</label>
+                <input
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      addTag(tagInput.trim().replace(/^#/, ""));
+                      setTagInput("");
+                    }
+                  }}
+                  placeholder="Tapez un tag et Entrée"
+                />
+                <div className="admin-tag-row">
+                  {(selected.tags || []).map(t => (
+                    <span key={t} className="admin-tag">
+                      #{t}
+                      <span className="del" onClick={() => removeTag(t)}>×</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label>Auteur</label>
+                <input value={selected.author} onChange={e => update({ author: e.target.value })} />
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<AdminApp />);
+</script>
+</body>
+</html>
