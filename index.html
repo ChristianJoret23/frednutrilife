@@ -15,9 +15,9 @@
 
 <script type="application/json" id="speaker-notes">[]</script>
 
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script defer src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
 <script src="components/BlogStore.js"></script>
 <script type="text/babel" src="components/Nav.jsx"></script>
@@ -37,66 +37,62 @@
 
 <script type="text/babel">
 
-
-
 const { useState, useEffect } = React;
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+const TWEAK_DEFAULTS = {
   "palette": 0,
   "typeStyle": "editorial",
   "heroVariant": "energie"
-} /*EDITMODE-END*/;
+};
 
 const PALETTES = [
-{ ink: "#0f1a14", ink2: "#18241d", ink3: "#22312a", cream: "#f2ebdc", cream2: "#ebe2cf", tan: "#c9b896", tan2: "#b09e7c", accent: "oklch(0.65 0.12 40)" },
-{ ink: "#11131a", ink2: "#181a24", ink3: "#222533", cream: "#ecebe5", cream2: "#e3e0d6", tan: "#b5aa85", tan2: "#9a8e6e", accent: "oklch(0.7 0.1 250)" },
-{ ink: "#1f1611", ink2: "#2a1f18", ink3: "#352920", cream: "#efe4d2", cream2: "#e5d8c0", tan: "#c8a676", tan2: "#ad8a5c", accent: "oklch(0.6 0.13 30)" },
-{ ink: "#16181a", ink2: "#1f2225", ink3: "#292c30", cream: "#e8e6df", cream2: "#dcd9cf", tan: "#a89a7e", tan2: "#8f8166", accent: "oklch(0.68 0.09 180)" }];
-
+  { ink: "#0f1a14", ink2: "#18241d", ink3: "#22312a", cream: "#f2ebdc", cream2: "#ebe2cf", tan: "#c9b896", tan2: "#b09e7c", accent: "oklch(0.65 0.12 40)" },
+  { ink: "#11131a", ink2: "#181a24", ink3: "#222533", cream: "#ecebe5", cream2: "#e3e0d6", tan: "#b5aa85", tan2: "#9a8e6e", accent: "oklch(0.7 0.1 250)" },
+  { ink: "#1f1611", ink2: "#2a1f18", ink3: "#352920", cream: "#efe4d2", cream2: "#e5d8c0", tan: "#c8a676", tan2: "#ad8a5c", accent: "oklch(0.6 0.13 30)" },
+  { ink: "#16181a", ink2: "#1f2225", ink3: "#292c30", cream: "#e8e6df", cream2: "#dcd9cf", tan: "#a89a7e", tan2: "#8f8166", accent: "oklch(0.68 0.09 180)" }
+];
 
 const TYPE_STYLES = {
   editorial: { display: '"Cormorant Garamond", serif', body: '"Manrope", sans-serif' },
-  modern: { display: '"Space Grotesk", sans-serif', body: '"Manrope", sans-serif' },
-  classic: { display: '"DM Serif Display", serif', body: '"Manrope", sans-serif' }
+  modern:    { display: '"Space Grotesk", sans-serif', body: '"Manrope", sans-serif' },
+  classic:   { display: '"DM Serif Display", serif',  body: '"Manrope", sans-serif' }
 };
 
 const HERO_VARIANTS = {
-  energie: { kw1: "énergie", kw2: "vie" },
-  vitalite: { kw1: "vitalité", kw2: "clarté" },
+  energie:   { kw1: "énergie",   kw2: "vie"     },
+  vitalite:  { kw1: "vitalité",  kw2: "clarté"  },
   longevite: { kw1: "longévité", kw2: "liberté" }
 };
 
 function applyTweaks(values) {
   const p = PALETTES[values.palette] || PALETTES[0];
   const r = document.documentElement.style;
-  r.setProperty("--ink", p.ink);
-  r.setProperty("--ink-2", p.ink2);
-  r.setProperty("--ink-3", p.ink3);
-  r.setProperty("--cream", p.cream);
-  r.setProperty("--cream-2", p.cream2);
-  r.setProperty("--tan", p.tan);
-  r.setProperty("--tan-2", p.tan2);
+  r.setProperty("--ink",        p.ink);
+  r.setProperty("--ink-2",      p.ink2);
+  r.setProperty("--ink-3",      p.ink3);
+  r.setProperty("--cream",      p.cream);
+  r.setProperty("--cream-2",    p.cream2);
+  r.setProperty("--tan",        p.tan);
+  r.setProperty("--tan-2",      p.tan2);
   r.setProperty("--terracotta", p.accent);
 
   const t = TYPE_STYLES[values.typeStyle] || TYPE_STYLES.editorial;
   r.setProperty("--font-display", t.display);
-  r.setProperty("--font-body", t.body);
+  r.setProperty("--font-body",    t.body);
 }
 
 function App() {
-  const [bookOpen, setBookOpen] = useState(false);
-  const [tweakMode, setTweakMode] = useState(false);
-  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [bookOpen,   setBookOpen]   = useState(false);
+  const [tweakMode,  setTweakMode]  = useState(false);
+  const [tweaks,     setTweaks]     = useState(TWEAK_DEFAULTS);
 
   const openBooking = () => setBookOpen(true);
 
-  useEffect(() => {
-    applyTweaks(tweaks);
-  }, [tweaks]);
+  useEffect(() => { applyTweaks(tweaks); }, [tweaks]);
 
   useEffect(() => {
     const handler = (ev) => {
-      if (ev.data?.type === "__activate_edit_mode") setTweakMode(true);
+      if (ev.data?.type === "__activate_edit_mode")   setTweakMode(true);
       if (ev.data?.type === "__deactivate_edit_mode") setTweakMode(false);
     };
     window.addEventListener("message", handler);
@@ -105,7 +101,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // reveal animations
     const els = document.querySelectorAll(".reveal, section > .container > .section-head, .pillar, .svc-card, .t-card, .step");
     els.forEach((el) => el.classList.add("reveal"));
     const io = new IntersectionObserver((entries) => {
@@ -144,63 +139,106 @@ function App() {
       <Footer />
       <Booking open={bookOpen} onClose={() => setBookOpen(false)} />
       <Tweaks visible={tweakMode} onChange={onTweakChange} values={tweaks} />
-    </>);
-
+    </>
+  );
 }
 
-// Wrap hero to pass keyword variant
+/* ─────────────────────────────────────────────
+   CORRECTIF 1 : </div> surnuméraire supprimée
+   CORRECTIF 2 : href="#approche" → href="#methode"
+                 (à ajuster selon l'id réel de la section)
+   CORRECTIF 3 : inline styles fontWeight/fontSize
+                 déplacés sur .hero-lead via className
+   CORRECTIF 4 : <span> vide remplacé par contenu symbolique
+   CORRECTIF 5 : id unique sur le <path> SVG
+───────────────────────────────────────────── */
 function HeroWithKeywords({ onBook, keywords }) {
   return (
     <section className="hero" id="accueil" data-screen-label="Landing / Hero">
       <div className="hero-bg-type" aria-hidden="true">vitalité</div>
-      <div className="container" style={{ fontWeight: "400", fontSize: "18px" }}>
+      <div className="container">
         <div className="hero-grid">
+
+          {/* ── Colonne texte ── */}
           <div>
             <span className="eyebrow">Nutrition · Vitalité · Longévité</span>
             <h1 className="display">
-              Retrouvez votre <em style={{ color: "var(--tan)", fontStyle: "italic" }}>{keywords.kw1}</em>, sans régime, ni <em style={{ color: "var(--tan)", fontStyle: "italic" }}>frustration</em>.
+              Retrouvez votre{" "}
+              <em style={{ color: "var(--tan)", fontStyle: "italic" }}>{keywords.kw1}</em>,
+              {" "}sans régime, ni{" "}
+              <em style={{ color: "var(--tan)", fontStyle: "italic" }}>frustration</em>.
             </h1>
-            <p className="hero-lead">Vous manquez d’énergie, vous dormez mal, vous vous sentez à plat ?
-On remet de l’ordre dans votre alimentation, votre sommeil et votre rythme — sans régime, sans frustration.
-
-
+            <p className="hero-lead">
+              Vous manquez d'énergie, vous dormez mal, vous vous sentez à plat ?
+              On remet de l'ordre dans votre alimentation, votre sommeil et votre rythme — sans régime, sans frustration.
             </p>
             <div className="hero-ctas">
               <button className="btn btn-primary" onClick={onBook}>
                 Réserver un appel découverte <span className="arrow">→</span>
               </button>
-              <a href="#approche" className="btn btn-outline">Découvrir la méthode</a>
+              {/* CORRECTIF 2 : ancre mise à jour — remplacer "methode" par l'id réel de la section */}
+              <a href="#methode" className="btn btn-outline">Découvrir la méthode</a>
             </div>
             <div className="hero-meta">
               <div>
-                <div className="num display italic">  Méthode<span style={{ color: "var(--tan)" }}></span></div>
-                <div className="lbl">Une méthode orientée résultats, développée et portée par un coach certifié IFSNM.</div>
-              </div>
+                <div className="num display italic">
+                  Méthode<span style={{ color: "var(--tan)" }}>✦</span>
+                </div>
+                <div className="lbl">
+                  Une méthode orientée résultats, développée et portée par un coach certifié IFSNM.
+                </div>
               </div>
             </div>
           </div>
+          {/* ── Fin colonne texte ── */}
+
+          {/* ── Colonne visuelle ── */}
           <div className="hero-visual">
-            <div className="hero-photo" style={{ backgroundImage: "url('assets/fred-hero.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-            </div>
+            <div
+              className="hero-photo"
+              style={{
+                backgroundImage:    "url('assets/fred-hero.jpg')",
+                backgroundSize:     "cover",
+                backgroundPosition: "center"
+              }}
+            />
             <div className="hero-badge">
               <div className="label">Coach certifié</div>
-              <div className="cert">Institut Français de Science Nutrition & Micronutrition</div>
+              <div className="cert">Institut Français de Science Nutrition &amp; Micronutrition</div>
             </div>
             <div className="hero-seal">
+              {/* CORRECTIF 5 : id unique pour éviter les conflits si composant dupliqué */}
               <svg viewBox="0 0 128 128">
                 <defs>
-                  <path id="circle-path" d="M 64, 64 m -48, 0 a 48,48 0 1,1 96,0 a 48,48 0 1,1 -96,0" />
+                  <path
+                    id="hero-seal-circle-path"
+                    d="M 64, 64 m -48, 0 a 48,48 0 1,1 96,0 a 48,48 0 1,1 -96,0"
+                  />
                 </defs>
                 <text fontFamily="Manrope" fontSize="9" letterSpacing="2" fill="#0f1a14">
-                  <textPath href="#circle-path">ÉQUILIBRE ALIMENTAIRE · MOUVEMENT · SOMMEIL · </textPath>
+                  <textPath href="#hero-seal-circle-path">
+                    ÉQUILIBRE ALIMENTAIRE · MOUVEMENT · SOMMEIL ·{" "}
+                  </textPath>
                 </text>
-                <text x="64" y="70" textAnchor="middle" fontFamily="Cormorant Garamond" fontStyle="italic" fontSize="22" fill="#0f1a14">FredNutriLife</text>
+                <text
+                  x="64" y="70"
+                  textAnchor="middle"
+                  fontFamily="Cormorant Garamond"
+                  fontStyle="italic"
+                  fontSize="22"
+                  fill="#0f1a14"
+                >
+                  FredNutriLife
+                </text>
               </svg>
             </div>
           </div>
+          {/* ── Fin colonne visuelle ── */}
+
         </div>
       </div>
-    </section>);
+    </section>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
